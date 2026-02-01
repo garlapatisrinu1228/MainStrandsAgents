@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strands Agent Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .status.online {
+            background: rgba(76, 217, 100, 0.3);
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.agent .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-header {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .message-text {
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        #questionInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        #questionInput:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .reset-btn {
+            padding: 10px 20px;
+            font-size: 13px;
+            background: #ff6b6b;
+            margin-left: 10px;
+        }
+
+        .reset-btn:hover {
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            margin: 0 3px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .welcome-message h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .welcome-message p {
+            margin-bottom: 10px;
+        }
+
+        .example-questions {
+            margin-top: 20px;
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .example-questions h3 {
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .example-questions ul {
+            list-style: none;
+        }
+
+        .example-questions li {
+            padding: 8px 0;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-questions li:hover {
+            color: #667eea;
+            padding-left: 10px;
+        }
+
+        .example-questions li::before {
+            content: "💬 ";
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Strands Agent</h1>
+            <p>Your AI-powered assistant</p>
+            <div class="status online" id="status">● Agent Online</div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h2>Welcome to Strands Agent! 👋</h2>
+                <p>I'm here to help answer your questions and assist you with various tasks.</p>
+                <p>Ask me anything!</p>
+                
+                <div class="example-questions">
+                    <h3>Try asking:</h3>
+                    <ul>
+                        <li onclick="askQuestion('What is artificial intelligence?')">What is artificial intelligence?</li>
+                        <li onclick="askQuestion('Can you help me write Python code?')">Can you help me write Python code?</li>
+                        <li onclick="askQuestion('Explain quantum computing in simple terms')">Explain quantum computing in simple terms</li>
+                        <li onclick="askQuestion('What are the benefits of using Strands Agents?')">What are the benefits of using Strands Agents?</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="questionInput" 
+                placeholder="Type your question here..." 
+                onkeypress="handleKeyPress(event)"
+            />
+            <button onclick="sendQuestion()" id="sendBtn">Send</button>
+            <button onclick="resetConversation()" class="reset-btn" id="resetBtn">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const questionInput = document.getElementById('questionInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+
+        // Check agent health on load
+        checkHealth();
+
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                if (data.status === 'healthy') {
+                    status.textContent = '● Agent Online';
+                    status.className = 'status online';
+                }
+            } catch (error) {
+                status.textContent = '● Agent Offline';
+                status.className = 'status';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendQuestion();
+            }
+        }
+
+        function askQuestion(question) {
+            questionInput.value = question;
+            sendQuestion();
+        }
+
+        async function sendQuestion() {
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                return;
+            }
+
+            // Disable input and button
+            questionInput.disabled = true;
+            sendBtn.disabled = true;
+            resetBtn.disabled = true;
+
+            // Remove welcome message if it exists
+            const welcomeMessage = document.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+
+            // Add user message to chat
+            addMessage('user', question);
+
+            // Clear input
+            questionInput.value = '';
+
+            // Show loading
+            loading.classList.add('active');
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    addMessage('agent', data.answer);
+                } else {
+                    addMessage('agent', `Error: ${data.error || 'Unknown error occurred'}`);
+                }
+            } catch (error) {
+                addMessage('agent', `Error: ${error.message}`);
+            } finally {
+                // Hide loading
+                loading.classList.remove('active');
+
+                // Re-enable input and button
+                questionInput.disabled = false;
+                sendBtn.disabled = false;
+                resetBtn.disabled = false;
+                questionInput.focus();
+            }
+        }
+
+        function addMessage(type, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'message-header';
+            headerDiv.textContent = type === 'user' ? 'You' : '🤖 Agent';
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = text;
+
+            contentDiv.appendChild(headerDiv);
+            contentDiv.appendChild(textDiv);
+            messageDiv.appendChild(contentDiv);
+
+            chatContainer.appendChild(messageDiv);
+
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function resetConversation() {
+            if (!confirm('Are you sure you want to reset the conversation?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/reset', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Clear chat container
+                    chatContainer.innerHTML = `
+                        <div class="welcome-message">
+                            <h2>Welcome to Strands Agent! 👋</h2>
+                            <p>I'm here to help answer your questions and assist you with various tasks.</p>
+                            <p>Ask me anything!</p>
+                            
+                            <div class="example-questions">
+                                <h3>Try asking:</h3>
+                                <ul>
+                                    <li onclick="askQuestion('What is artificial intelligence?')">What is artificial intelligence?</li>
+                                    <li onclick="askQuestion('Can you help me write Python code?')">Can you help me write Python code?</li>
+                                    <li onclick="askQuestion('Explain quantum computing in simple terms')">Explain quantum computing in simple terms</li>
+                                    <li onclick="askQuestion('What are the benefits of using Strands Agents?')">What are the benefits of using Strands Agents?</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                alert(`Error resetting conversation: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
